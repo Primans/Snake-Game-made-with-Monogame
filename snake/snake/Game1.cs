@@ -374,6 +374,8 @@ public class Game1 : Game
             }
         }
 
+        _spriteBatch.DrawString(font, "TEST", new Vector2(20, 50), Color.White);
+
         _spriteBatch.End();
 
 
