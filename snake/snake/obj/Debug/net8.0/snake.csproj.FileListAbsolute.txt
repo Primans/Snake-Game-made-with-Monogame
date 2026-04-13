@@ -33,3 +33,7 @@ C:\Users\filip.hakansson2\snake\snake\obj\Debug\net8.0\snake.genruntimeconfig.ca
 C:\Users\filip.hakansson2\snake\snake\obj\Debug\net8.0\ref\snake.dll
 C:\Users\filip.hakansson2\snake\snake\bin\Debug\net8.0\Content\font.xnb
 C:\Users\filip.hakansson2\snake\snake\bin\Debug\net8.0\Content\fontBig.xnb
+C:\Users\filip.hakansson2\Snake-Game-made-with-Monogame\snake\snake\obj\Debug\net8.0\mgcb.tool.restore
+C:\Users\filip.hakansson2\Snake-Game-made-with-Monogame\snake\snake\obj\Debug\net8.0\snake.dll
+C:\Users\filip.hakansson2\Snake-Game-made-with-Monogame\snake\snake\obj\Debug\net8.0\refint\snake.dll
+C:\Users\filip.hakansson2\Snake-Game-made-with-Monogame\snake\snake\obj\Debug\net8.0\snake.pdb
