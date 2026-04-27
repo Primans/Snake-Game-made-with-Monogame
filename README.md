@@ -1,1 +1,1 @@
-A classic Snake style game made with Monogame
+A classic Snake style game made with Monogame in C#
