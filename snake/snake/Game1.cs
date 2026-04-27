@@ -13,6 +13,8 @@ namespace snake;
 public class Game1 : Game
 {
     List<Point> snakePart = new List<Point>();   //skapar en lista för att kunna lagra alla delar av ormen, point är som en variabel med (x, y) koordinater
+    List<Point> foodList = new List<Point>();   //skapar en lista för att kunna lagra alla äpplen som spawnar
+    List<int> foodTypes = new List<int>();  //skapar en lista för att kunna lagra vilken typ av äpplen som de olika äpplena är, 0 är vanlig 1 är guld och 2 är blå
 
 
     private Texture2D pixel;   //skapar en textur som man kan rita med
@@ -20,7 +22,6 @@ public class Game1 : Game
     private SpriteFont fontBig; //skapar en större font för att kunna rita "Game Over" texten
 
     Point direction = new Point(1, 0);   //en ny point som lägger till en X för att röra ormen
-    Point food;   //äpplets position
     private Random random = new Random();
     private int score = 0;    //poäng
     private int highScore;   //variabel som håller reda på highscoret
@@ -28,6 +29,7 @@ public class Game1 : Game
     private int cellSize = 20;
     private int maxX;    //deklareras så den kan användas överallt
     private int maxY;    //deklareras så den kan användas överallt
+    private int foodCount = 1; //en int som man kan välja hur många äpplen som ska kunna finnas samtidigt
     private bool newHighScore = false;
     private bool gameOver = false;
     private bool showControls = false;   //en bool så man kan toggla controls texten i startmenyn
@@ -47,25 +49,59 @@ public class Game1 : Game
         int maxX = _graphics.PreferredBackBufferWidth / 20;
         int maxY = _graphics.PreferredBackBufferHeight / 20;
 
-        food = new Point(random.Next(0, maxX), random.Next(0, maxY));
+        //för att spawna äpplen
+        //en Point som är varsomhelst förutom där ormen eller ett annat äpple är
+        Point newFood;
+
+        //kollar så att det inte spawnar ett äpple på ormen eller på ett annat äpple
+        do
+        {
+            newFood = new Point(random.Next(0, maxX), random.Next(0, maxY));
+        }
+        while (foodList.Contains(newFood) || snakePart.Contains(newFood));
+
+        foodList.Add(newFood);
+
+
+        //för att välja äppeltyp
+        foodRNG = random.Next(1, 100); //slumpar ett nummer mellan 1 och 100
+
+        if (foodRNG <= 5) //lagrar ett guldäpple med 5% chans
+        {
+            foodTypes.Add(1);
+        }
+        else if (foodRNG > 5 && foodRNG <= 20) //lagrar ett blått äpple som ger 2 poäng med 15% chans
+        {
+            foodTypes.Add(2);
+        }
+        else //lagrar ett vanligt äpple med 80% chans
+        {
+            foodTypes.Add(0);
+        }
     }
 
-    private void SpawnGoldenFood()
+    private void startNewGame()
     {
-        //välj en random position i rutnätet, där varje ruta är 20x20 pixlar
-        int maxX = _graphics.PreferredBackBufferWidth / 20;
-        int maxY = _graphics.PreferredBackBufferHeight / 20;
+        //återställer spelet
+        snakePart.Clear();   //clearar alla delar av ormen
+        foodList.Clear();    //clearar alla äpplen
+        foodTypes.Clear();   //clearar alla äppletyper
 
-        food = new Point(random.Next(0, maxX), random.Next(0, maxY));
-    }
+        //lägger till de delar av ormen som ska finnas från början igen
+        snakePart.Add(new Point(5, 5));
+        snakePart.Add(new Point(4, 5));
+        snakePart.Add(new Point(3, 5));
 
-        private void SpawnBlueFood()
-    {
-        //välj en random position i rutnätet, där varje ruta är 20x20 pixlar
-        int maxX = _graphics.PreferredBackBufferWidth / 20;
-        int maxY = _graphics.PreferredBackBufferHeight / 20;
+        for (int i = 0; i < foodCount; i++)
+        {
+            SpawnFood();
+        }
 
-        food = new Point(random.Next(0, maxX), random.Next(0, maxY));
+        direction = new Point(1, 0);   //återställer riktningen
+        score = 0;
+        newHighScore = false;
+        gameOver = false;
+        gappleEaten = false;
     }
 
     private void addPoint()
@@ -92,7 +128,8 @@ public class Game1 : Game
         snakePart.Add(new Point(4, 5));
         snakePart.Add(new Point(3, 5));
 
-        SpawnFood(); //spawnar ett äpple när spelet startar
+        foodList.Clear();
+        foodTypes.Clear();
 
         base.Initialize();
     }
@@ -148,47 +185,36 @@ public class Game1 : Game
             }
         }
 
-        if (foodRNG <= 5 && snakePart[0] == food)
+        //spawnar ett nytt äpple om ormen äter ett
+        for (int i = 0; i < foodList.Count; i++)
         {
-            gappleEaten = true;
-            addPoint();
-        }
-        else if (foodRNG > 5 && foodRNG <= 20 && snakePart[0] == food)
-        {
-            gappleEaten = false;
-            addPoint();
-            addPoint();
-        }
-        else if (foodRNG != 1 && snakePart[0] == food)
-        {
-            gappleEaten = false;
-            addPoint();
-        }
-
-
-
-        //när ormens huvud är på samma position som äpplet
-        if (snakePart[0] == food)
+            if (snakePart[0] == foodList[i])
             {
-                //lägg till en ny del i slutet av ormen (genom att duplicera den sista delen)
+                if (foodTypes[i] == 1)
+                {
+                    gappleEaten = true;
+                    addPoint();
+                }
+                else if (foodTypes[i] == 2)
+                {
+                    gappleEaten = false;
+                    addPoint();
+                    addPoint();
+                }
+                else if (foodTypes[i] == 0)
+                {
+                    gappleEaten = false;
+                    addPoint();
+                }
+
+                //tar bort äpplet man ätitt från foodList och foodTypes
+                foodList.RemoveAt(i);
+                foodTypes.RemoveAt(i);
+
+                SpawnFood();
                 snakePart.Add(snakePart[snakePart.Count - 1]);
-
-
-                foodRNG = random.Next(1, 100); //slumpar ett nummer mellan 1 och 100
-
-                if (foodRNG <= 5) //spawnar ett guldäpple istället 5% chans
-                {
-                    SpawnGoldenFood();
-                }
-                else if (foodRNG > 5 && foodRNG <= 20) //spawnar ett blått äpple som ger 2 poäng istället 15% chans
-                {
-                    SpawnBlueFood();
-                }
-                else
-                {
-                    SpawnFood();
-                }
             }
+        }
 
 
         currentMoveDelay = moveDelay;
@@ -231,25 +257,28 @@ public class Game1 : Game
 
         if (gameOver && Keyboard.GetState().IsKeyDown(Keys.R))
         {
-            //återställ spelet
-            snakePart.Clear();   //clearar alla delar av ormen och lägger till de som ska finnas från början igen
-            snakePart.Add(new Point(5, 5));
-            snakePart.Add(new Point(4, 5));
-            snakePart.Add(new Point(3, 5));
-            direction = new Point(1, 0);   //återställer riktningen
-            score = 0;
-            newHighScore = false;
-            gameOver = false;
-            gappleEaten = false;
-            SpawnFood();
+            startNewGame();
         }
         else if (startText && !showControls && Keyboard.GetState().IsKeyDown(Keys.Space))
         {
             startText = false;
+            startNewGame();
         }
 
 
-
+        //gör att man kan välja antal äpplen som ska finnas, bara när man är i startmenyn
+        if (startText && !gameOver && Keyboard.GetState().IsKeyDown(Keys.D1))
+        {
+            foodCount = 1;
+        }
+        else if (startText && !gameOver && Keyboard.GetState().IsKeyDown(Keys.D2))
+        {
+            foodCount = 2;
+        }
+        else if (startText && !gameOver && Keyboard.GetState().IsKeyDown(Keys.D3))
+        {
+            foodCount = 3;
+        }
 
         //gör att man kan toggla controls menyn i startmenyn
         if (startText && !gameOver && Keyboard.GetState().IsKeyDown(Keys.C))
@@ -284,6 +313,21 @@ public class Game1 : Game
         //annars rita allt annat normalt
         if (!gameOver && startText && !showControls)
         {
+            string appleCountText = "Choose number of apples:";
+            Vector2 textSizeAppleCount = font.MeasureString(appleCountText);
+            Vector2 positionAppleCount = new Vector2((_graphics.PreferredBackBufferWidth - textSizeAppleCount.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeAppleCount.Y) / 2 - 200);
+            _spriteBatch.DrawString(font, appleCountText, positionAppleCount, Color.White);
+
+            Color color1 = foodCount == 1 ? Color.Red : Color.White;
+            Color color2 = foodCount == 2 ? Color.Red : Color.White;
+            Color color3 = foodCount == 3 ? Color.Red : Color.White;
+
+            _spriteBatch.DrawString(fontBig, "1", new Vector2(positionAppleCount.X, positionAppleCount.Y + 50), color1);
+            _spriteBatch.DrawString(fontBig, "2", new Vector2(positionAppleCount.X + 200, positionAppleCount.Y + 50), color2);
+            _spriteBatch.DrawString(fontBig, "3", new Vector2(positionAppleCount.X + 400, positionAppleCount.Y + 50), color3);
+
+
+
             string bigStartText = "Welcome to snake!";
             Vector2 textSizeBig = fontBig.MeasureString(bigStartText);
             Vector2 positionBig = new Vector2((_graphics.PreferredBackBufferWidth - textSizeBig.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeBig.Y) / 2 - 300);
@@ -291,12 +335,12 @@ public class Game1 : Game
 
             string startText = "Press space to start";
             Vector2 textSize = font.MeasureString(startText);
-            Vector2 position = new Vector2((_graphics.PreferredBackBufferWidth - textSize.X) / 2, (_graphics.PreferredBackBufferHeight - textSize.Y) / 2 - 200);
+            Vector2 position = new Vector2((_graphics.PreferredBackBufferWidth - textSize.X) / 2, (_graphics.PreferredBackBufferHeight - textSize.Y) / 2);
             _spriteBatch.DrawString(font, startText, position, Color.White);
 
             string startText2 = "Press C to view the controls";
             Vector2 textSize2 = font.MeasureString(startText2);
-            Vector2 position2 = new Vector2((_graphics.PreferredBackBufferWidth - textSize2.X) / 2, (_graphics.PreferredBackBufferHeight - textSize2.Y) / 2 - 150);
+            Vector2 position2 = new Vector2((_graphics.PreferredBackBufferWidth - textSize2.X) / 2, (_graphics.PreferredBackBufferHeight - textSize2.Y) / 2 + 50);
             _spriteBatch.DrawString(font, startText2, position2, Color.White);
 
         }
@@ -349,33 +393,39 @@ public class Game1 : Game
                 }
             }
 
-            //spawnar äpplet på de slumpade koordinaterna, också 20x20 pixlar
-            if (foodRNG <= 5)
-            {
-                _spriteBatch.Draw(pixel, new Rectangle(food.X * 20, food.Y * 20, 20, 20), Color.Gold);
 
-                string gappleText = "Golden apple spawned! Eat it for a speed boost";
-                Vector2 textSizeGapple = font.MeasureString(gappleText);
-                Vector2 positionGapple = new Vector2((_graphics.PreferredBackBufferWidth - textSizeGapple.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeGapple.Y) / 2 - 300);
+                for (int i = 0; i < foodList.Count; i++)
+                {
+                    if (foodTypes[i] == 1)
+                    {
+                        _spriteBatch.Draw(pixel, new Rectangle(foodList[i].X * 20, foodList[i].Y * 20, 20, 20), Color.Gold);
 
-                _spriteBatch.DrawString(font, gappleText, positionGapple, Color.Gold);
-            }
-            else if (foodRNG > 5 && foodRNG <= 20)
-            {
-                _spriteBatch.Draw(pixel, new Rectangle(food.X * 20, food.Y * 20, 20, 20), Color.Cyan);
+                        string gappleText = "Golden apple spawned! Eat it for a speed boost";
+                        Vector2 textSizeGapple = font.MeasureString(gappleText);
+                        Vector2 positionGapple = new Vector2((_graphics.PreferredBackBufferWidth - textSizeGapple.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeGapple.Y) / 2 - 350);
 
-                string bappleText = "Blue apple spawned! Eat it for 2 points";
-                Vector2 textSizeBapple = font.MeasureString(bappleText);
-                Vector2 positionBapple = new Vector2((_graphics.PreferredBackBufferWidth - textSizeBapple.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeBapple.Y) / 2 - 300);
+                        _spriteBatch.DrawString(font, gappleText, positionGapple, Color.Gold);
+                    }
 
-                _spriteBatch.DrawString(font, bappleText, positionBapple, Color.Cyan);
-            }
-            else
-            {
-                _spriteBatch.Draw(pixel, new Rectangle(food.X * 20, food.Y * 20, 20, 20), Color.Red);
-            }
+                    else if (foodTypes[i] == 2)
+                    {
+                        _spriteBatch.Draw(pixel, new Rectangle(foodList[i].X * 20, foodList[i].Y * 20, 20, 20), Color.Cyan);
+
+                        string bappleText = "Blue apple spawned! Eat it to gain 2 points";
+                        Vector2 textSizeBapple = font.MeasureString(bappleText);
+                        Vector2 positionBapple = new Vector2((_graphics.PreferredBackBufferWidth - textSizeBapple.X) / 2, (_graphics.PreferredBackBufferHeight - textSizeBapple.Y) / 2 - 300);
+
+                        _spriteBatch.DrawString(font, bappleText, positionBapple, Color.Cyan);
+                    }
+
+                    else if (foodTypes[i] == 0)
+                    {
+                        _spriteBatch.Draw(pixel, new Rectangle(foodList[i].X * 20, foodList[i].Y * 20, 20, 20), Color.Red);
+                    }
+                }
 
             _spriteBatch.DrawString(font, "Score: " + score, new Vector2(20, 20), Color.White);
+            
 
         }
 
